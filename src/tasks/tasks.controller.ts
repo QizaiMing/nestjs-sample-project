@@ -3,13 +3,11 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
-  Req,
-  Res,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { Task } from './interfaces/Task';
 import { TasksService } from './tasks.service';
@@ -18,17 +16,21 @@ import { TasksService } from './tasks.service';
 export class TasksController {
   constructor(private tasksService: TasksService) {}
 
-  // @Get()
+  @Get()
   // getTasks(@Req() req: Request, @Res() res: Response): Task[] {
   //   return res.send(this.tasksService.getTasks());
   // }
   getTasks(): Promise<Task[]> {
-    return this.tasksService.getTasks();
+    const tasks = this.tasksService.getTasks();
+    if (!tasks) throw new NotFoundException('There are no tasks');
+    return tasks;
   }
 
   @Get(':id')
   getTask(@Param('id') id: string): Promise<Task> {
-    return this.tasksService.getTask(id);
+    const task = this.tasksService.getTask(id);
+    if (!task) throw new NotFoundException('Task does not exist');
+    return task;
   }
 
   @Post()
@@ -37,15 +39,19 @@ export class TasksController {
   }
 
   @Put(':id')
-  updateTask(@Body() task: CreateTaskDto, @Param('id') id: number): string {
-    console.log(task);
-    console.log(id);
-    return 'Updating a task';
+  updateTask(
+    @Body() task: CreateTaskDto,
+    @Param('id') id: string,
+  ): Promise<Task> {
+    const updatedTask = this.tasksService.updateTask(id, task);
+    if (!updatedTask) throw new NotFoundException('Task does not exist');
+    return updatedTask;
   }
 
   @Delete(':id')
-  deleteTask(@Param('id') id: number): string {
-    console.log(id);
-    return 'Deleting a task';
+  async deleteTask(@Param('id') id: number): Promise<any> {
+    const taskDeleted = await this.tasksService.deleteTask(id);
+    if (!taskDeleted) throw new NotFoundException('Task does not exist');
+    return taskDeleted;
   }
 }
